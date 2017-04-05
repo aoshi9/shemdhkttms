@@ -1,0 +1,19 @@
+# Environment variables
+
+# Conversation
+WORKSPACE_ID=de95118c-44cd-4467-8891-95b8b9ea0d62
+CONVERSATION_USERNAME=f935454b-eb73-4174-bcf6-aa294bbed98b
+CONVERSATION_PASSWORD=VZz84w2DGIwy
+
+# Cloudant
+CLOUDANT_URL=<cloudant-url>
+CLOUDANT_CONTEXT_DB=<db-name>
+
+# Telegram
+TELEGRAM_TOKEN=<token>
+
+# Public URL
+PUBLIC_URL=<url>
+
+# RBS(Room Reservation Service) URL
+RBS_URL=<url>
