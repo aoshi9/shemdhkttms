@@ -11,20 +11,20 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations under the License.변경
+ * limitations under the License.
  */
-
+ 
  'use strict';
-
+ 
 const Conversation = require('watson-developer-cloud/conversation/v1'); // watson sdk
 const config = require('../util/config');
 const request = require('request');
 const moment = require('moment');
-
-
+ 
+ 
 // Create a Service Wrapper
 let conversation = new Conversation(config.conversation);
-
+ 
 let getConversationResponse = (message, context) => {
   let payload = {
     workspace_id: process.env.WORKSPACE_ID,
@@ -33,7 +33,7 @@ let getConversationResponse = (message, context) => {
   };
  
   payload = preProcess(payload);
-
+ 
   return new Promise((resolved, rejected) => {
     // Send the input to the conversation service
     conversation.message(payload, function(err, data) {
@@ -65,7 +65,7 @@ let getConversationResponse = (message, context) => {
   })
     
 }
-
+ 
 let postMessage = (req, res) => {
   let message = req.body.input || {};
   let context = req.body.context || {};
@@ -75,7 +75,7 @@ let postMessage = (req, res) => {
     return res.status(err.code || 500).json(err);
   });
 }
-
+ 
 /** 
 * 사용자의 메세지를 Watson Conversation 서비스에 전달하기 전에 처리할 코드
 * @param  {Object} user input
@@ -85,23 +85,23 @@ let preProcess = payload => {
   console.log("User Input : " + inputText);
   console.log("Processed Input : " + inputText); 
   console.log("--------------------------------------------------");
-
+ 
   return payload;
 }
-
+ 
 /** 
  * Watson Conversation 서비스의 응답을 사용자에게 전달하기 전에 처리할 코드 
  * @param  {Object} watson response 
  */ 
-
+ 
 let postProcess = response => { 
-  console.log("Conversation Output1 : " + response.output.text);
+  console.log("Conversation Output : " + response.output.text);
   console.log("--------------------------------------------------");
   if(response.context && response.context.action){
     return doAction(response, response.context.action);
   }  
 }
-
+ 
 /** 
  * 대화 도중 Action을 수행할 필요가 있을 때 처리되는 함수
  * @param  {Object} data : response object
@@ -109,7 +109,7 @@ let postProcess = response => {
  */ 
 let doAction = (data, action) => {
   console.log("Action : " + action.command);
-
+ 
   switch(action.command){
 	case "check-visitor":
 	  return checkVisitor(data, action);
@@ -144,7 +144,7 @@ let doAction = (data, action) => {
     default: console.log("Command not supported.")
   }
 }
-
+ 
 let checkVisitor = (data, action) => {
   //db 연결
   var mysql      = require('mysql');  
@@ -163,32 +163,62 @@ let checkVisitor = (data, action) => {
 	}  
   });
 	return new Promise((resolved, rejected) => {
-	  console.log("방문자의 체크" +data.context.vstreg.name + " ,  " +data.context.vstreg.phone);
 		data.context.action = {};
-		var str;		
-		connection.query('select visitor_id,name,phone,company from visitor where name = ? and phone = ?',[data.context.vstreg.name,data.context.vstreg.phone], function(err, rows, fields) {  		
+		var str;	
+		var sql;
+		var input;
+		var sql1 = "select d.seq,d.visitor_id,d.name,d.phone,d.company"
+				+" from ( select c.*,(case @vname||@vphone when c.name||c.phone then @rownum:=@rownum+1 else @rownum:=1 end) rnum, (@vname:=c.name) vname,(@vphone:=c.phone) vphone"
+				+" from (select a.seq,a.visitor_id,b.name,b.phone,b.company from visit_reservation a, visitor b where a.visitor_id=b.visitor_id and b.name = ? ) c"				
+				+" , (select @vname:='',@vphone:='',@rownum:=0 from dual) e"
+				+" order by c.seq desc,c.visitor_id desc ) d"
+				+" where d.rnum = 1"
+		var sql2 = "select d.seq,d.visitor_id,d.name,d.phone,d.company"
+				+" from ( select c.*,(case @vname||@vphone when c.name||c.phone then @rownum:=@rownum+1 else @rownum:=1 end) rnum, (@vname:=c.name) vname,(@vphone:=c.phone) vphone"
+				+" from (select a.seq,a.visitor_id,b.name,b.phone,b.company from visit_reservation a, visitor b where a.visitor_id=b.visitor_id and b.name = ? and b.phone = ? ) c"				
+				+" , (select @vname:='',@vphone:='',@rownum:=0 from dual) e"
+				+" order by c.seq desc,c.visitor_id desc ) d"
+				+" where d.rnum = 1"
+		if(data.context.vstreg.phone.length == 0){
+			sql=sql1;
+		}
+		else{
+			sql=sql2;
+		}
+	
+		connection.query(sql,[data.context.vstreg.name,data.context.vstreg.phone], function(err, rows, fields) {  	
 		if (!err){ 
 			str = JSON.stringify(rows);	
 			var jsn = JSON.parse(str);
 			
 			console.log(rows);
-			console.log(">>str : " +str);
-			
-			data.output.text = '<br>' ;
-			
-			for (var i in rows){
-				data.output.text += rows[i].visitor_id+'. '+rows[i].name +'('+rows[i].phone+"  "+ rows[i].company+')<br>';
-			}	
-			
+			console.log(sql);
+			console.log("name:"+data.context.vstreg.name+">>str : " +str);
+			console.log("phone:"+data.context.vstreg.phone+">>str : " +str);
 			if (rows.length == 0){
-				data.output.text += '방문자의 소속회사명을 입력해 주세요.';				
+				data.context.visityn = "N";
+				if(data.context.vstreg.phone.length != 0 &&data.context.vstreg.company.length != 0 && data.context.vstreg.dates.length != 0){
+					data.output.text = data.context.vstreg.dates+"에"+data.context.vstreg.name+ "("+data.context.vstreg.phone+" "+data.context.vstreg.company+")님 방문등록 진행 할까요?";
+				}
+				else {
+					data.output.text = "그러면 <b>"+data.context.vstreg.name+"</b>님의 ";
+					if(data.context.vstreg.phone.length == 0){
+						data.output.text += "연락처 ";
+					}
+					if(data.context.vstreg.company.length == 0){
+						data.output.text += "회사 ";
+					}
+					if(data.context.vstreg.dates.length == 0){
+						data.output.text += "방문일자 ";
+					}
+					data.output.text += "를 입력해 주세요";
+				}
 			}
 			else {
-				data.output.text += '위 방문자 정보가 맞나요?';
-				//data.context.vstreg.company = rows[0].company;
-			}
-			//console.log(data.context.vstreg.name+data.context.vstreg.phone+"/"+data.output.text);
-			data.context.visitor = jsn;
+				data.context.visityn = "Y";
+				data.context.visitor = jsn;
+				data.output.text = rows[0].name+ "님("+rows[0].phone+" "+rows[0].company+")은 최근에 방문하셨는데 동일 정보로 예약할까요?" ;
+			}	
 			console.log(data.context.visitor);
 			console.log(data);
 			resolved(data);
@@ -196,11 +226,11 @@ let checkVisitor = (data, action) => {
 		else  
 			console.log('Error while performing Query.'+err);  
 		});
-
+ 
 	});
    connection.end(); 
 }
-
+ 
 let visitorRegistration = (data, action) => {
   //db 연결
   var mysql      = require('mysql');  
@@ -230,11 +260,11 @@ let visitorRegistration = (data, action) => {
 		else  
 			console.log('Error while performing Query.'+err);  
 		});
-
+ 
 	});
    connection.end(); 
 }
-
+ 
 let visitSchedule = (data, action) => {
   //db 연결
   var mysql      = require('mysql');  
@@ -264,7 +294,7 @@ let visitSchedule = (data, action) => {
 		else  
 			console.log('Error while performing Query.'+err);  
 		});
-
+ 
 	});
    connection.end(); 
 }
@@ -298,11 +328,11 @@ let visitSchedule = (data, action) => {
 		else  
 			console.log('Error while performing Query.'+err);  
 		});
-
+ 
 	});
    connection.end(); 
 }
-
+ 
 let checkParking = (data, action) => {
   //db 연결
   var mysql      = require('mysql');  
@@ -332,14 +362,11 @@ let checkParking = (data, action) => {
 			console.log(rows);
 			console.log(">>str : " +str);
 			
-			data.output.text = '<br>' ;				
-			
 			if (rows.length == 0){
-				data.output.text += '방문자의 차량번호를 입력해 주세요.';				
+				data.output.text = '<br> 주차등록이 필요하시면, 차량번호를 입력해 주세요.';				
 			}
 			else {
-				data.output.text += rows[0].carnumber+'. '+data.context.vstreg.name +'('+data.context.vstreg.phone+')<br>';			
-				data.output.text += '위 차량 정보가 맞나요?';								
+				data.output.text = '지난번에 등록하신 차량번호 '+rows[0].carnumber+'가 존재하는데, 이번에도 등록해 드릴까요?';							
 				data.context.vstreg.carnumber = rows[0].carnumber;
 			}
 			
@@ -349,7 +376,7 @@ let checkParking = (data, action) => {
 		else  
 			console.log('Error while performing Query.'+err);  
 		});
-
+ 
 	});
    connection.end(); 
 } 
@@ -366,7 +393,7 @@ let checkParking = (data, action) => {
     qs : {
     }
   };
-
+ 
 	return new Promise((resolved, rejected) => {
 		data.context.action = {};
 		request(reqOption, (err, res, body) => {
@@ -380,7 +407,7 @@ let checkParking = (data, action) => {
 		  resolved(data);
 		}) 
 	});
-
+ 
 }
 **/
 /** 
@@ -394,7 +421,7 @@ let checkAvailability = (data, action) => {
 		host    :'localhost',
 		port    : 3306,
 		user : 'root',
-		password : 'nbcs',
+		password : 'root',
 		database:'demo_dev' 
   }); 
   connection.connect(function(err){  
@@ -418,7 +445,7 @@ let checkAvailability = (data, action) => {
 			}
 			data.output.text += '회의실 예약이 필요하면, 위치와 호를 입력?';
 			resolved(data);
-
+ 
 		}
 		else  
 			console.log('Error while performing Query.');
@@ -426,9 +453,9 @@ let checkAvailability = (data, action) => {
 	})	   
 	});
 	connection.end();
-
+ 
 }
-
+ 
 /**
  * Make reservation
  * @param  {Object} data : response object
@@ -440,7 +467,7 @@ let confirmReservation = (data, action) =>{
 		host    :'localhost',
 		port    : 3306,
 		user : 'root',
-		password : 'nbcs',
+		password : 'root',
 		database:'demo_dev' 
   }); 
   connection.connect(function(err){  
@@ -466,7 +493,7 @@ let confirmReservation = (data, action) =>{
 			}
 			data.output.text += '회의실 예약이 필요하면, 위치와 호를 입력?';
 			resolved(data);
-
+ 
 		}
 		else  
 			console.log('Error while performing Query.');
@@ -475,7 +502,7 @@ let confirmReservation = (data, action) =>{
 	});
 	connection.end();
 }
-
+ 
 /** 
  * 사용자의 회의실 예약 리스트를 가져오는 함수
  * @param  {Object} data : response object
@@ -489,7 +516,7 @@ let checkReservation = (data, action) => {
     startTime = action.times[0]?action.times[0].value:undefined;
     endTime = action.times[1]?action.times[1].value:undefined;
   }
-
+ 
   // 날짜 값과 시간 값을 조합하여 시작 시간과 종료 시간을 Timestamp 형태로 변환합니다. 편의를 위해 종료 시간이 따로 명시되지 않는 경우 시작 시간에서 1개월 후로 설정하도록 합니다.
   let startTimestamp = new moment();
   if(startTime){
@@ -499,7 +526,7 @@ let checkReservation = (data, action) => {
   if(endTime){
     endTimestamp = new moment(date+" "+endTime);
   }
-
+ 
   // /book/search/byuser API는 site id, user id, start time, end time을 Query parameter로 받아 해당 시간에 사용자의 예약 리스트를 return해주는 api입니다.
   let reqOption = {
     method : 'GET',
@@ -543,14 +570,14 @@ let checkReservation = (data, action) => {
     })
   });
 }
-
+ 
 let checkNextReservation = (data, action) => {
   return checkReservation(data, action).then(data => {
     if(data.output.text && Array.isArray(data.output.text)) data.output.text = data.output.text[0];
     return data
   });
 }
-
+ 
 /** 
  * 회의실 취소
  * @param  {Object} data : response object
@@ -562,7 +589,7 @@ let confirmCancellation = (data, action) => {
   let eventId = data.context.eventid;
   let reservations = data.context.reservations;
   let index = data.context.removeIndex;
-
+ 
   let reqOption = {
     method : 'DELETE',
     url : process.env.RBS_URL + '/book',
@@ -576,7 +603,7 @@ let confirmCancellation = (data, action) => {
       "roomid" : reservations[index].roomid
     }
   };
-
+ 
   return new Promise((resolved, rejected) => {
     request(reqOption, (err, res, body) => {
       data.context.action = {};
@@ -587,7 +614,7 @@ let confirmCancellation = (data, action) => {
     })
   });
 }
-
+ 
 module.exports = {
     'initialize': (app, options) => {
         app.post('/api/message', postMessage);
