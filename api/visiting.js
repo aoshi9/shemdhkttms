@@ -25,7 +25,37 @@ var pool = mysql.createPool({
 	database:'demo_dev' 
 });  
 
-exports.checkVisitor = function(data, action){
+
+/** 
+ * 대화 도중 Action을 수행할 필요가 있을 때 처리되는 함수
+ * @param  {Object} data : response object
+ * @param  {Object} action 
+ */ 
+exports.doAction = (data, action) => {
+  console.log("Action : " + action.command);  
+  switch(action.command){
+	case "check-visitor":
+	  return checkVisitor(data, action);
+	  break;
+    case "visitor-registration":
+      return visitorRegistration(data, action);
+      break;
+    case "visit-schedule":
+      return visitSchedule(data, action);
+      break;    
+    case "parking-schedule":
+      return parkingSchedule(data, action);
+      break;    
+    case "check-parking":
+      return checkParking(data, action);
+      break;
+    default: console.log("Command not supported.")
+  }
+}
+ 
+
+
+let checkVisitor = function(data, action){
 
 	return new Promise((resolved, rejected) => {
 		data.context.action = {};
@@ -100,7 +130,7 @@ exports.checkVisitor = function(data, action){
    
 }
 
-exports.visitorRegistration = (data, action) => {
+let visitorRegistration = (data, action) => {
 	
 	return new Promise((resolved, rejected) => {
 		data.context.action = {};
@@ -127,7 +157,7 @@ exports.visitorRegistration = (data, action) => {
    
 }
  
-exports.visitSchedule = (data, action) => {
+let visitSchedule = (data, action) => {
 
 	return new Promise((resolved, rejected) => {
 		data.context.action = {};
@@ -150,7 +180,7 @@ exports.visitSchedule = (data, action) => {
    
 }
  
-exports.parkingSchedule = (data, action) => {
+let parkingSchedule = (data, action) => {
  
   	return new Promise((resolved, rejected) => {
 		data.context.action = {};
@@ -172,7 +202,7 @@ exports.parkingSchedule = (data, action) => {
    
 }
  
-exports.checkParking = (data, action) => {
+let checkParking = (data, action) => {
 
 	return new Promise((resolved, rejected) => {
 		data.context.action = {};

@@ -99,7 +99,7 @@ let postProcess = response => {
   console.log("Conversation Output : " + response.output.text);
   console.log("--------------------------------------------------");
   if(response.context && response.context.action){
-    return doAction(response, response.context.action);
+    return v.doAction(response, response.context.action);
   }  
 }
  
@@ -108,6 +108,7 @@ let postProcess = response => {
  * @param  {Object} data : response object
  * @param  {Object} action 
  */ 
+/**
 let doAction = (data, action) => {
   console.log("Action : " + action.command);  
   switch(action.command){
@@ -145,7 +146,7 @@ let doAction = (data, action) => {
   }
 }
  
-
+**/
 
  /**
  let checkTime = (data, action) => {
