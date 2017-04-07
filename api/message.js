@@ -198,7 +198,7 @@ let checkVisitor = (data, action) => {
 			if (rows.length == 0){
 				data.context.visityn = "N";
 				if(data.context.vstreg.phone.length != 0 &&data.context.vstreg.company.length != 0 && data.context.vstreg.dates.length != 0){
-					data.output.text = data.context.vstreg.dates+"에"+data.context.vstreg.name+ "("+data.context.vstreg.phone+" "+data.context.vstreg.company+")님 방문등록 진행 할까요?";
+					data.output.text = data.context.vstreg.dates+"에 "+data.context.vstreg.name+ "("+data.context.vstreg.phone+" "+data.context.vstreg.company+")님 방문등록 진행 할까요?";
 				}
 				else {
 					data.output.text = "그러면 <b>"+data.context.vstreg.name+"</b>님의 ";
@@ -221,14 +221,16 @@ let checkVisitor = (data, action) => {
 			}	
 			console.log(data.context.visitor);
 			console.log(data);
+			connection.end(); 
 			resolved(data);
+			
 		}
 		else  
 			console.log('Error while performing Query.'+err);  
 		});
  
 	});
-   connection.end(); 
+   
 }
  
 let visitorRegistration = (data, action) => {
@@ -252,9 +254,14 @@ let visitorRegistration = (data, action) => {
 		data.context.action = {};
 		var str;
 		var sql = "insert into visitor (visitor_id,name,phone,company) values ( (select ifnull(max(visitor_id)+1,0) from visitor a), ?, ?, ?)"
+		
+		console.log("sql >> "+sql);
+		console.log("data >> "+data);
 		connection.query(sql,[data.context.vstreg.name,data.context.vstreg.phone,data.context.vstreg.company], function(err, rows, fields) {  		
 		if (!err){ 
-			console.log(rows+':::'+fields);  
+			console.log("visitorregistration >> "+rows);  
+			data.context.visityn="Y";
+			connection.end(); 	
 			resolved(data);
 		}
 		else  
@@ -262,7 +269,7 @@ let visitorRegistration = (data, action) => {
 		});
  
 	});
-   connection.end(); 
+   
 }
  
 let visitSchedule = (data, action) => {
@@ -286,9 +293,10 @@ let visitSchedule = (data, action) => {
 		data.context.action = {};
 		var str;
 		var sql = "insert into visit_reservation (seq,visit_dates,visitor_id,reservation_state,user_id) values ( (select ifnull(max(seq)+1,0) from visit_reservation a), ?, (select max(visitor_id) from visitor b where name = ? and phone = ?), 'RSV', ?)"
+
 		connection.query(sql,[data.context.vstreg.dates,data.context.vstreg.name,data.context.vstreg.phone,data.context.user.user_id], function(err, rows, fields) {  		
 		if (!err){ 
-			
+			connection.end(); 
 			resolved(data);
 		}
 		else  
@@ -296,7 +304,7 @@ let visitSchedule = (data, action) => {
 		});
  
 	});
-   connection.end(); 
+   
 }
  
  let parkingSchedule = (data, action) => {
@@ -322,7 +330,7 @@ let visitSchedule = (data, action) => {
 		var sql = "insert into parking_reservation (seq,dates,carnumber,name,phone,user_id) values ( (select ifnull(max(seq)+1,0) from parking_reservation a), ?,?,?,?,?)"
 		connection.query(sql,[data.context.vstreg.dates,data.context.vstreg.carnumber,data.context.vstreg.name,data.context.vstreg.phone,data.context.user.user_id], function(err, rows, fields) {  		
 		if (!err){ 
-		
+			connection.end(); 
 			resolved(data);
 		}
 		else  
@@ -330,7 +338,7 @@ let visitSchedule = (data, action) => {
 		});
  
 	});
-   connection.end(); 
+   
 }
  
 let checkParking = (data, action) => {
@@ -369,7 +377,7 @@ let checkParking = (data, action) => {
 				data.output.text = '지난번에 등록하신 차량번호 '+rows[0].carnumber+'가 존재하는데, 이번에도 등록해 드릴까요?';							
 				data.context.vstreg.carnumber = rows[0].carnumber;
 			}
-			
+			connection.end(); 
 			console.log(data);
 			resolved(data);
 		}
@@ -378,7 +386,7 @@ let checkParking = (data, action) => {
 		});
  
 	});
-   connection.end(); 
+   
 } 
  /**
  let checkTime = (data, action) => {
