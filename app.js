@@ -22,8 +22,15 @@ var bodyParser = require('body-parser'); // parser for post requests
 var api = require('./api');
 var app = express();
 
+var restPost = require('./api/post');  //rest api(post) from mobie app 
+
 // Bootstrap application settings
 app.use(express.static('./public')); // load UI from public folder
 app.use(bodyParser.json());
 api.initialize(app);
 module.exports = app;
+
+
+//rest api(post) from mobie app 
+app.post('/action', restPost.doAction);
+
