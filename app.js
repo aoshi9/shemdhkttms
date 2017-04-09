@@ -22,7 +22,7 @@ var bodyParser = require('body-parser'); // parser for post requests
 var api = require('./api');
 var app = express();
 
-var restPost = require('./api/post');  //rest api(post) from mobie app 
+var restPost = require('./api/post');  // rest api(post) from mobie app 
 
 // Bootstrap application settings
 app.use(express.static('./public')); // load UI from public folder
