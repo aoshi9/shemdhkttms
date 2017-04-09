@@ -22,7 +22,7 @@ var bodyParser = require('body-parser'); // parser for post requests
 var api = require('./api');
 var app = express();
 
-var restPost = require('./api/post');  // rest api(post) from mobie app 
+var restPost = require('./api/post');  // rest api(post) from android app 
 
 // Bootstrap application settings
 app.use(express.static('./public')); // load UI from public folder
@@ -31,6 +31,6 @@ api.initialize(app);
 module.exports = app;
 
 
-//rest api(post) from mobie app 
+//rest api(post) from android app 
 app.post('/action', restPost.doAction);
 

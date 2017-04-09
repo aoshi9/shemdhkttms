@@ -1,6 +1,8 @@
 
 var v = require('./visiting');
 
+//rest api post 수신 (from json to json)
+
 exports.doAction = function (req, res) {
 
 	console.log("doAction start");
